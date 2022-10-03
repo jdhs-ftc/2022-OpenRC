@@ -22,6 +22,8 @@ public class MeepMeepTesting {
                                 .turn(Math.toRadians(90))
                                 .forward(30)
                                 .turn(Math.toRadians(90))
+                                .splineToSplineHeading(new Pose2d(-59, -48, Math.toRadians(45)), 60)
+                                .strafeRight(5)
                                 .build()
                 );
 
