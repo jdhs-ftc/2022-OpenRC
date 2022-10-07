@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.annotation.SuppressLint;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
@@ -74,7 +76,9 @@ public class StateMachineWithObjectRecognition extends LinearOpMode {
     // Define our start pose
     // This assumes we start at x: 15, y: 10, heading: 180 degrees
     Pose2d startPose = new Pose2d(15, 10, Math.toRadians(180));
+    @SuppressLint("SdCardPath")
     private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/detect.tflite";
+    @SuppressLint("SdCardPath")
     private static final String TFOD_MODEL_LABELS = "/sdcard/FIRST/tflitemodels/labelmap.txt";
     private String[] labels;
 
@@ -94,13 +98,13 @@ public class StateMachineWithObjectRecognition extends LinearOpMode {
             "AYIy+wf/////AAABmTogX7sfc00thsy7eGmWjM0t4M0Us8RBEMt1Iirw/kewa0thLqGGvBQ6ywDiCn6A6FxGh8OveZuemqV17zZezDrUWcQ2CNl2hUo0HUm5Lq4X9UPvlqLd7CTp7yWrRkJS7Wz3V2Balxyuq06cRnWDv/IegCK88mlrtMiC677QXo4k5SfBlhKJtmUCF2xCxeudF6tUvsigoYnfW5J924saoNiQJKagpfAxoTey8o2/AaC8Gy3UYaQjs3ye29LpELDyyxTGAWYRgsKWXcpP7jQtbsQMqslY5UUqUIBcI0BcnYZ3iZkgDPf7pfXhs1zyxAnoE+GKPPDg/eOAn7G6Rd+JTasXb+tkhT7v73DcAzJxh0y1";
 
     /**
-     * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
+     * vuforia is the variable we will use to store our instance of the Vuforia
      * localization engine.
      */
     private VuforiaLocalizer vuforia;
 
     /**
-     * {@link #tfod} is the variable we will use to store our instance of the TensorFlow Object
+     * tfod is the variable we will use to store our instance of the TensorFlow Object
      * Detection engine.
      */
     private TFObjectDetector tfod;
@@ -153,7 +157,7 @@ public class StateMachineWithObjectRecognition extends LinearOpMode {
         FtcDashboard dashboard = FtcDashboard.getInstance();
         dashboard.startCameraStream(tfod, 0);
         telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
-        /**
+        /*
          * Activate TensorFlow Object Detection before we wait for the start command.
          * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
          **/
@@ -275,7 +279,10 @@ public class StateMachineWithObjectRecognition extends LinearOpMode {
                     // This concludes the autonomous program
                     break;
             }
-            List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+            List<Recognition> updatedRecognitions = null;
+            if (tfod != null) {
+                updatedRecognitions = tfod.getUpdatedRecognitions();
+            }
             if (updatedRecognitions != null) {
                 for (Recognition recognition : updatedRecognitions) {
                     String label = recognition.getLabel();
@@ -311,7 +318,7 @@ public class StateMachineWithObjectRecognition extends LinearOpMode {
     // Assume we have a hardware class called lift
     // Lift uses a PID controller to maintain its height
     // Thus, update() must be called in a loop
-    class Lift {
+    static class Lift {
         public Lift(HardwareMap hardwareMap) {
             // Beep boop this is the the constructor for the lift
             // Assume this sets up the lift hardware

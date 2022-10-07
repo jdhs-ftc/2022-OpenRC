@@ -29,16 +29,15 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import android.annotation.SuppressLint;
-
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.RobotLog;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
+import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection;
 import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
@@ -48,22 +47,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This 2020-2021 OpMode illustrates the basics of using the TensorFlow Object Detection API to
- * determine the position of the Ultimate Goal game elements.
+ * This 2022-2023 OpMode illustrates the basics of using the TensorFlow Object Detection API to
+ * determine which image is being presented to the robot.
  *
  * Use Android Studio to Copy this Class, and Paste it into your team's code folder with a new name.
- * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list.
+ * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list.
  *
  * IMPORTANT: In order to use this OpMode, you need to obtain your own Vuforia license key as
  * is explained below.
  */
-@Disabled
-@TeleOp(name = "TFOD Everyday Objects", group = "Concept")
+@TeleOp(name = "TFOD Everyday Objects better", group = "Concept")
 //@Disabled
-public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
-    @SuppressLint("SdCardPath")
+public class TFODEverydayObjects extends LinearOpMode {
     private static final String TFOD_MODEL_FILE = "/sdcard/FIRST/tflitemodels/detect.tflite";
-    @SuppressLint("SdCardPath")
     private static final String TFOD_MODEL_LABELS = "/sdcard/FIRST/tflitemodels/labelmap.txt";
     private String[] labels;
 
@@ -82,7 +78,18 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
     private static final String VUFORIA_KEY =
             "AYIy+wf/////AAABmTogX7sfc00thsy7eGmWjM0t4M0Us8RBEMt1Iirw/kewa0thLqGGvBQ6ywDiCn6A6FxGh8OveZuemqV17zZezDrUWcQ2CNl2hUo0HUm5Lq4X9UPvlqLd7CTp7yWrRkJS7Wz3V2Balxyuq06cRnWDv/IegCK88mlrtMiC677QXo4k5SfBlhKJtmUCF2xCxeudF6tUvsigoYnfW5J924saoNiQJKagpfAxoTey8o2/AaC8Gy3UYaQjs3ye29LpELDyyxTGAWYRgsKWXcpP7jQtbsQMqslY5UUqUIBcI0BcnYZ3iZkgDPf7pfXhs1zyxAnoE+GKPPDg/eOAn7G6Rd+JTasXb+tkhT7v73DcAzJxh0y1";
 
-    @SuppressLint("DefaultLocale")
+    /**
+     * {link #vuforia} is the variable we will use to store our instance of the Vuforia
+     * localization engine.
+     */
+    private VuforiaLocalizer vuforia;
+
+    /**
+     *  #tfod} is the variable we will use to store our instance of the TensorFlow Object
+     * Detection engine.
+     */
+    private TFObjectDetector tfod;
+
     @Override
     public void runOpMode() {
         // read the label map text files.
@@ -90,107 +97,95 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
 
         // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
         // first.
-        /*
-         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-         */
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
-
-        parameters.vuforiaLicenseKey = VUFORIA_KEY;
-        //Camera Webcam =
-        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
-
-        //  Instantiate the Vuforia engine
-        /**
-         * vuforia is the variable we will use to store our instance of the Vuforia
-         * localization engine.
-         */
-        VuforiaLocalizer vuforia = ClassFactory.getInstance().createVuforia(parameters);
-
-        // Loading trackables is not necessary for the TensorFlow Object Detection engine.
-        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
-                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
-        tfodParameters.minResultConfidence = 0.6f;
-        /**
-         * tfod is the variable we will use to store our instance of the TensorFlow Object
-         * Detection engine.
-         */
-        TFObjectDetector tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
-        if(labels != null) {
-            tfod.loadModelFromFile(TFOD_MODEL_FILE, labels);
-            RobotLog.vv("initTfod()", "Loaded Model");
-        }
+        initVuforia();
+        initTfod();
 
         /*
          * Activate TensorFlow Object Detection before we wait for the start command.
          * Do it here so that the Camera Stream window will have the TensorFlow annotations visible.
          **/
         if (tfod != null) {
-            RobotLog.vv("tfod", "Tfod is non-null");
             tfod.activate();
-
 
             // The TensorFlow software will scale the input images from the camera to a lower resolution.
             // This can result in lower detection accuracy at longer distances (> 55cm or 22").
-            // If your target is at distance greater than 50 cm (20") you can adjust the magnification value
+            // If your target is at distance greater than 50 cm (20") you can increase the magnification value
             // to artificially zoom in to the center of image.  For best results, the "aspectRatio" argument
             // should be set to the value of the images used to create the TensorFlow Object Detection model
-            // (typically 1.78 or 16/9).
-
-            // Uncomment the following line if you want to adjust the magnification and/or the aspect ratio of the input images.
-            //tfod.setZoom(2.5, 1.78);
+            // (typically 16/9).
+            tfod.setZoom(1.0, 16.0/9.0);
         }
-        //FtcDashboard dashboard = FtcDashboard.getInstance();
-        //dashboard.startCameraStream(tfod, 0);
-        //telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
 
         /* Wait for the game to begin */
         telemetry.addData(">", "Press Play to start op mode");
         telemetry.update();
         waitForStart();
+
         if (opModeIsActive()) {
-            while (opModeIsActive()) { // TODO: add "& detectedLayer == 0" after we have the location of the detections set
-                assert tfod != null;
-                List<Recognition> Recognitions = tfod.getRecognitions();
-                if (Recognitions != null) {
+            while (opModeIsActive()) {
+                if (tfod != null) {
+                    // getUpdatedRecognitions() will return null if no new information is available since
+                    // the last time that call was made.
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                        telemetry.addData("# Objects Detected", updatedRecognitions.size());
 
+                        // step through the list of recognitions and display image position/size information for each one
+                        // Note: "Image number" refers to the randomized image orientation/number
+                        for (Recognition recognition : updatedRecognitions) {
+                            double col = (recognition.getLeft() + recognition.getRight()) / 2 ;
+                            double row = (recognition.getTop()  + recognition.getBottom()) / 2 ;
+                            double width  = Math.abs(recognition.getRight() - recognition.getLeft()) ;
+                            double height = Math.abs(recognition.getTop()  - recognition.getBottom()) ;
 
-                    int i = 0;
-                    for (Recognition recognition : Recognitions) {
-                        float leftEdge = recognition.getLeft();
-
-                        // step through the list of recognitions and display boundary info
-                        telemetry.addData("# Object Detected", Recognitions.size());
-                        telemetry.addData(String.format("label (%d)", i), recognition.getLabel());
-                        telemetry.addData(String.format("  left,top (%d)", i), "%.03f , %.03f",
-                                leftEdge, recognition.getTop());
-                        telemetry.addData(String.format("  right,bottom (%d)", i), "%.03f , %.03f",
-                                recognition.getRight(), recognition.getBottom());
+                            telemetry.addData(""," ");
+                            telemetry.addData("Image", "%s (%.0f %% Conf.)", recognition.getLabel(), recognition.getConfidence() * 100 );
+                            telemetry.addData("- Position (Row/Col)","%.0f / %.0f", row, col);
+                            telemetry.addData("- Size (Width/Height)","%.0f / %.0f", width, height);
+                        }
                         telemetry.update();
-
                     }
-                } else {
-                    telemetry.addData("Error", "TFOD has initialized but no objects have been detected");
-                    telemetry.update();
                 }
             }
-
-
-        }
-        // TODO: roadrunner paths
-
-
-
-        if (tfod != null) {
-            tfod.shutdown();
         }
     }
 
+    /**
+     * Initialize the Vuforia localization engine.
+     */
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraDirection = CameraDirection.BACK;
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+        dashboard.startCameraStream(vuforia, 0);
+        //dashboard.startCameraStream(tfod, 0);
+        telemetry = new MultipleTelemetry(telemetry, dashboard.getTelemetry());
+    }
 
     /**
      * Initialize the TensorFlow Object Detection engine.
      */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfodParameters.minResultConfidence = 0.6f;
+        tfodParameters.isModelTensorFlow2 = false;
+        tfodParameters.inputSize = 300;
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        if (labels != null) {
+            tfod.loadModelFromFile(TFOD_MODEL_FILE, labels);
+        }
 
+    }
 
     /**
      * Read the labels for the object detection model from a file.
@@ -202,15 +197,14 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
         try (BufferedReader br = new BufferedReader(new FileReader(TFOD_MODEL_LABELS))) {
             int index = 0;
             while (br.ready()) {
-                /* skip the first row of the labelmap.txt file.
-                 * if you look at the TFOD Android example project (https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android)
-                 * you will see that the labels for the inference model are actually extracted (as metadata) from the .tflite model file
-                 * instead of from the labelmap.txt file. if you build and run that example project, you'll see that
-                 * the label list begins with the label "person" and does not include the first line of the labelmap.txt file ("???").
-                 * i suspect that the first line of the labelmap.txt file might be reserved for some future metadata schema
-                 * (or that the generated label map file is incorrect).
-                 * for now, skip the first line of the label map text file so that your label list is in sync with the embedded label list in the .tflite model.
-                 */
+                // skip the first row of the labelmap.txt file.
+                // if you look at the TFOD Android example project (https://github.com/tensorflow/examples/tree/master/lite/examples/object_detection/android)
+                // you will see that the labels for the inference model are actually extracted (as metadata) from the .tflite model file
+                // instead of from the labelmap.txt file. if you build and run that example project, you'll see that
+                // the label list begins with the label "person" and does not include the first line of the labelmap.txt file ("???").
+                // i suspect that the first line of the labelmap.txt file might be reserved for some future metadata schema
+                // (or that the generated label map file is incorrect).
+                // for now, skip the first line of the label map text file so that your label list is in sync with the embedded label list in the .tflite model.
                 if(index == 0) {
                     // skip first line.
                     br.readLine();
@@ -239,7 +233,7 @@ public class ConceptTensorFlowObjectDetectionWebcam extends LinearOpMode {
     private String[] getStringArray(ArrayList<String> arr)
     {
         // declaration and initialize String Array
-        String[] str = new String[arr.size()];
+        String str[] = new String[arr.size()];
 
         // Convert ArrayList to object array
         Object[] objArr = arr.toArray();
