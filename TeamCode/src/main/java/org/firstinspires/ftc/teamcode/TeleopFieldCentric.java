@@ -1,10 +1,12 @@
-package org.firstinspires.ftc.teamcode.drive;
+package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+
+import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 /**
  * This opmode demonstrates how one would implement field centric control using
@@ -27,7 +29,7 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         // Retrieve our pose from the PoseStorage.currentPose static field
         // See AutoTransferPose.java for further details
-        //drive.setPoseEstimate(PoseStorage.currentPose);
+        drive.setPoseEstimate(PoseStorage.currentPose);
 
         waitForStart();
 
