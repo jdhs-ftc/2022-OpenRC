@@ -75,11 +75,11 @@ public class TeleopFieldCentric extends LinearOpMode {
                     new Pose2d(
                             input.getX(),
                             input.getY(),
-                            (gamepad1.right_trigger - gamepad1.left_trigger)
+                            -gamepad1.right_stick_x
                     )
             );
 
-
+            claw.setPower(gamepad2.left_stick_x);
 
             // Update everything. Odometry. Etc.
             drive.update();
