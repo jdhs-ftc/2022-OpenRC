@@ -19,7 +19,9 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
  */
 @TeleOp(group = "advanced")
 public class TeleopFieldCentric extends LinearOpMode {
-    DcMotorEx arm;
+    DcMotorEx slide;
+    double slideTargetPosition;
+    double error;
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize SampleMecanumDrive
@@ -34,9 +36,9 @@ public class TeleopFieldCentric extends LinearOpMode {
         drive.setPoseEstimate(PoseStorage.currentPose);
 
         // Arm
-        arm = hardwareMap.get(DcMotorEx.class, "arm");
-        arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        slide = hardwareMap.get(DcMotorEx.class, "arm");
+        slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         waitForStart();
 
         if (isStopRequested()) return;
@@ -64,7 +66,42 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // Update everything. Odometry. Etc.
             drive.update();
-            arm.setPower(-gamepad1.right_stick_y * 0.25);
+            slideTargetPosition = slideTargetPosition + (-gamepad1.right_stick_y * 10);
+            if (gamepad1.y) {
+                slideTargetPosition = 1200;
+                // move arm
+            }
+            if (gamepad1.b) {
+                slideTargetPosition = 600;
+            }
+            if (gamepad1.a) {
+                slideTargetPosition = 10;
+            }
+            if (slideTargetPosition > 1200) {
+                slideTargetPosition = 1200;
+            } else if (slideTargetPosition < 0) {
+                slideTargetPosition = 0;
+            }
+
+            error = slideTargetPosition - slide.getCurrentPosition();
+            // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
+            if (Math.abs(error) > 10) {
+                // obtain the encoder position
+
+                // calculate the error
+
+                // set motor power proportional to the error
+                if (Math.abs(error) > 50) {
+                    if (error > 0) {
+                        slide.setPower(0.5);
+                    } else {
+                        slide.setPower(-0.5);
+                    }
+                } else {
+                    slide.setPower(error / 100);
+                }
+            }
+
 
             // Print pose to telemetry
             telemetry.addData("x", poseEstimate.getX());
