@@ -17,10 +17,9 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
  */
 @TeleOp(group = "drive")
 public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
-    DcMotorEx arm;
-    Double armTargetPosition;
-    Integer error;
-    Integer reference;
+    DcMotorEx slide;
+    double slideTargetPosition;
+    double error;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -28,10 +27,11 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
 
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        arm = hardwareMap.get(DcMotorEx.class, "arm");
-        arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        arm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        armTargetPosition = 0.0;
+        slide = hardwareMap.get(DcMotorEx.class, "arm");
+        slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        slideTargetPosition = 0.0;
+
         waitForStart();
 
         while (!isStopRequested()) {
@@ -45,17 +45,40 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
 
             drive.update();
 
-            armTargetPosition = armTargetPosition + (-gamepad1.right_stick_y * 0.25);
+            slideTargetPosition = slideTargetPosition + (-gamepad1.right_stick_y * 10);
+            if (gamepad1.y) {
+                slideTargetPosition = 1200;
+                // move arm
+            }
+            if (gamepad1.b) {
+                slideTargetPosition = 600;
+            }
+            if (gamepad1.a) {
+                slideTargetPosition = 10;
+            }
+            if (slideTargetPosition > 1200) {
+                slideTargetPosition = 1200;
+            } else if (slideTargetPosition < 0) {
+                slideTargetPosition = 0;
+            }
 
-
+            error = slideTargetPosition - slide.getCurrentPosition();
             // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
-            while (Math.abs(error) > 10) {
+            if (Math.abs(error) > 10) {
                 // obtain the encoder position
 
                 // calculate the error
-                error = reference - arm.getCurrentPosition();
+
                 // set motor power proportional to the error
-                arm.setPower(error * 0.5);
+                if (Math.abs(error) > 50) {
+                    if (error > 0) {
+                    slide.setPower(0.5);
+                    } else {
+                        slide.setPower(-0.5);
+                    }
+                } else {
+                    slide.setPower(error / 100);
+                }
             }
 
 
@@ -64,8 +87,9 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
             telemetry.addData("x", poseEstimate.getX());
             telemetry.addData("y", poseEstimate.getY());
             telemetry.addData("heading", poseEstimate.getHeading());
-            telemetry.addData("armPosition", arm.getCurrentPosition());
-            telemetry.addData("armTargetPosition", armTargetPosition);
+            telemetry.addData("armPosition", slide.getCurrentPosition());
+            telemetry.addData("armTargetPosition", slideTargetPosition);
+            telemetry.addData("error", error);
             telemetry.update();
         }
     }
