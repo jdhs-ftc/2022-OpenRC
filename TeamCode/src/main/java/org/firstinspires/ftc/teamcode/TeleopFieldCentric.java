@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
@@ -92,7 +91,7 @@ public class TeleopFieldCentric extends LinearOpMode {
                 slideTargetPosition = 600;
             }
             if (gamepad2.a) {
-                slideTargetPosition = 10;
+                slideTargetPosition = 20;
             }
             if (slideTargetPosition > 1200) {
                 slideTargetPosition = 1200;

@@ -22,13 +22,12 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
-import com.acmerobotics.roadrunner.geometry.Vector2d;
-import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
+import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequence;
 import org.openftc.apriltag.AprilTagDetection;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
@@ -69,11 +68,13 @@ public class DetectConeAuto extends LinearOpMode {
         // Refer to https://www.learnroadrunner.com/trajectories.html#coordinate-system for a map
         // of the field
         // This example sets the bot at x: 10, y: 15, and facing 90 degrees (turned counter-clockwise)
-        Pose2d startPose = new Pose2d(10, 15, Math.toRadians(90));
+        //Pose2d startPose = new Pose2d(10, 15, Math.toRadians(90));
         /*
         // Blue Team
         // Red Corner
+        */
         Pose2d startPose = new Pose2d(36,61.5,Math.toRadians(-90));
+        /*
         // Blue Corner
         Pose2d startPose = new Pose2d(36,61.5,Math.toRadians(-90));
         // Red Team
@@ -82,22 +83,23 @@ public class DetectConeAuto extends LinearOpMode {
         // Blue Corner
         Pose2d startPose = new Pose2d(36,-61.5,Math.toRadians(90));
         // Both
+        */
         drive.setPoseEstimate(startPose);
-        Trajectory park1 = drive.trajectoryBuilder(startPose)
+        TrajectorySequence park1 = drive.trajectorySequenceBuilder(startPose)
                 .strafeLeft(24)
                 .forward(25)
                 .build();
-         Trajectory park2 = drive.trajectoryBuilder(startPose)
+         TrajectorySequence park2 = drive.trajectorySequenceBuilder(startPose)
                 .strafeRight(24)
                 .forward(50)
                 .strafeLeft(24)
                 .build();
-         Trajectory park3 = drive.trajectoryBuilder(startPose)
+         TrajectorySequence park3 = drive.trajectorySequenceBuilder(startPose)
                 .strafeRight(24)
                 .forward(25)
                 .build();
 
-         */
+         /*
         drive.setPoseEstimate(startPose);
         Trajectory park1 = drive.trajectoryBuilder(startPose)
                 .splineTo(new Vector2d(10, 10), 0)
@@ -108,6 +110,8 @@ public class DetectConeAuto extends LinearOpMode {
         Trajectory park3 = drive.trajectoryBuilder(startPose)
                 .splineTo(new Vector2d(10, 10), 0)
                 .build();
+                */
+
         // Initialize camera
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
         camera = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
@@ -206,14 +210,14 @@ public class DetectConeAuto extends LinearOpMode {
 
             if (tagOfInterest.id == 0) {
                 // TODO: drive to 1 position
-                //drive.followTrajectory(park1);
+                drive.followTrajectorySequence(park1);
 
             } else if (tagOfInterest.id == 1) {
                 // TODO: drive to 2 position
-                //drive.followTrajectory(park2);
+                drive.followTrajectorySequence(park2);
             } else if (tagOfInterest.id == 2) {
                 // TODO: drive to 3 position
-                //drive.followTrajectory(park3);
+                drive.followTrajectorySequence(park3);
             }
             // do something else
         }
