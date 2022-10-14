@@ -4,8 +4,10 @@ import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
@@ -44,6 +46,10 @@ public class TeleopFieldCentric extends LinearOpMode {
         slide = hardwareMap.get(DcMotorEx.class, "arm");
         slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        //Claw
+        CRServo claw = hardwareMap.get(CRServo.class, "claw");
+        claw.setPower(0);
         waitForStart();
 
         if (isStopRequested()) return;
