@@ -22,8 +22,13 @@ public class TeleopFieldCentric extends LinearOpMode {
     DcMotorEx slide;
     double slideTargetPosition;
     double error;
+
+
     @Override
     public void runOpMode() throws InterruptedException {
+
+        //Initialization Period
+
         // Initialize SampleMecanumDrive
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
@@ -43,6 +48,10 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         if (isStopRequested()) return;
 
+
+        //Run Period
+
+
         while (opModeIsActive() && !isStopRequested()) {
             // Read pose
             Pose2d poseEstimate = drive.getPoseEstimate();
@@ -60,21 +69,23 @@ public class TeleopFieldCentric extends LinearOpMode {
                     new Pose2d(
                             input.getX(),
                             input.getY(),
-                            -gamepad1.right_stick_x
+                            (gamepad1.right_trigger - gamepad1.left_trigger)
                     )
             );
 
+
+
             // Update everything. Odometry. Etc.
             drive.update();
-            slideTargetPosition = slideTargetPosition + (-gamepad1.right_stick_y * 10);
-            if (gamepad1.y) {
+            slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
+            if (gamepad2.y) {
                 slideTargetPosition = 1200;
                 // move arm
             }
-            if (gamepad1.b) {
+            if (gamepad2.b) {
                 slideTargetPosition = 600;
             }
-            if (gamepad1.a) {
+            if (gamepad2.a) {
                 slideTargetPosition = 10;
             }
             if (slideTargetPosition > 1200) {
@@ -82,6 +93,8 @@ public class TeleopFieldCentric extends LinearOpMode {
             } else if (slideTargetPosition < 0) {
                 slideTargetPosition = 0;
             }
+
+
 
             error = slideTargetPosition - slide.getCurrentPosition();
             // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
