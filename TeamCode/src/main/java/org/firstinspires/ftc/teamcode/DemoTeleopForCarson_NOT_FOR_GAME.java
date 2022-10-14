@@ -18,6 +18,9 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 @TeleOp(group = "drive")
 public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
     DcMotorEx arm;
+    Double armTargetPosition;
+    Integer error;
+    Integer reference;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -28,6 +31,7 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
         arm = hardwareMap.get(DcMotorEx.class, "arm");
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         arm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        armTargetPosition = 0.0;
         waitForStart();
 
         while (!isStopRequested()) {
@@ -40,7 +44,20 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
             );
 
             drive.update();
-            arm.setPower(-gamepad1.right_stick_y * 0.25);
+
+            armTargetPosition = armTargetPosition + (-gamepad1.right_stick_y * 0.25);
+
+
+            // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
+            while (Math.abs(error) > 10) {
+                // obtain the encoder position
+
+                // calculate the error
+                error = reference - arm.getCurrentPosition();
+                // set motor power proportional to the error
+                arm.setPower(error * 0.5);
+            }
+
 
 
             Pose2d poseEstimate = drive.getPoseEstimate();
@@ -48,6 +65,7 @@ public class DemoTeleopForCarson_NOT_FOR_GAME extends LinearOpMode {
             telemetry.addData("y", poseEstimate.getY());
             telemetry.addData("heading", poseEstimate.getHeading());
             telemetry.addData("armPosition", arm.getCurrentPosition());
+            telemetry.addData("armTargetPosition", armTargetPosition);
             telemetry.update();
         }
     }

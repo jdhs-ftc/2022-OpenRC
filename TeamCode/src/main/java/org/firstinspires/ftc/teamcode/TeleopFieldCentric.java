@@ -5,6 +5,7 @@ import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
@@ -18,6 +19,7 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
  */
 @TeleOp(group = "advanced")
 public class TeleopFieldCentric extends LinearOpMode {
+    DcMotorEx arm;
     @Override
     public void runOpMode() throws InterruptedException {
         // Initialize SampleMecanumDrive
@@ -31,6 +33,10 @@ public class TeleopFieldCentric extends LinearOpMode {
         // See AutoTransferPose.java for further details
         drive.setPoseEstimate(PoseStorage.currentPose);
 
+        // Arm
+        arm = hardwareMap.get(DcMotorEx.class, "arm");
+        arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        arm.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         waitForStart();
 
         if (isStopRequested()) return;
@@ -58,6 +64,7 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // Update everything. Odometry. Etc.
             drive.update();
+            arm.setPower(-gamepad1.right_stick_y * 0.25);
 
             // Print pose to telemetry
             telemetry.addData("x", poseEstimate.getX());
