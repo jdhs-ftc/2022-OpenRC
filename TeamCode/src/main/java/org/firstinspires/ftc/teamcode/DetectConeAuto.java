@@ -91,12 +91,12 @@ public class DetectConeAuto extends LinearOpMode {
                 .forward(25)
                 .build();
          TrajectorySequence park2 = drive.trajectorySequenceBuilder(startPose)
-                .strafeRight(24)
-                .forward(50)
                 .strafeLeft(24)
+                .forward(50)
+                .strafeRight(24)
                 .build();
          TrajectorySequence park3 = drive.trajectorySequenceBuilder(startPose)
-                .strafeRight(24)
+                .strafeRight(22)
                 .forward(25)
                 .build();
 

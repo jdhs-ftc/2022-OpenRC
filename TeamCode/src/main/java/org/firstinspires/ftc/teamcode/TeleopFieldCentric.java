@@ -95,6 +95,12 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // Update everything. Odometry. Etc.
             drive.update();
+
+            //FieldcENTRIC
+            if (gamepad1.x) {
+                fieldCentricEnable = !fieldCentricEnable;
+            }
+            // Slide
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
             if (gamepad2.y) {
                 slideTargetPosition = 1200;
@@ -138,6 +144,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("heading", poseEstimate.getHeading());
             telemetry.addData("armPosition", slide.getCurrentPosition());
             telemetry.addData("armTargetPosition", slideTargetPosition);
+            telemetry.addData("toggleFieldCentric", fieldCentricEnable);
             telemetry.update();
         }
     }
