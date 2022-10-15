@@ -25,6 +25,7 @@ public class TeleopFieldCentric extends LinearOpMode {
     double error;
     CRServo claw;
     boolean fieldCentricEnable;
+    boolean blue;
 
 
     @Override
@@ -57,6 +58,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         // Variable Init
         fieldCentricEnable = true;
         slideTargetPosition = 0.0;
+        blue = true;
 
         waitForStart();
 
@@ -77,7 +79,11 @@ public class TeleopFieldCentric extends LinearOpMode {
                     -gamepad1.left_stick_x
             );
             if (fieldCentricEnable) {
-                input = input.rotated(-poseEstimate.getHeading());
+                if (blue) {
+                    input = input.rotated(-poseEstimate.getHeading() + 90.0);
+                } else {
+                    input = input.rotated(-poseEstimate.getHeading() + 270.0);
+                }
             }
 
             // Pass in the rotated input + right stick value for rotation
@@ -98,7 +104,11 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             //FieldcENTRIC
             if (gamepad1.x) {
-                fieldCentricEnable = !fieldCentricEnable;
+                if (!blue) {
+                    blue = true;
+                } else {
+                    blue = false;
+                }
             }
             // Slide
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
