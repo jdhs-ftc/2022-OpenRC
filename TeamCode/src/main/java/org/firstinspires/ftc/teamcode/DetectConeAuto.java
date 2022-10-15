@@ -21,9 +21,10 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
@@ -35,7 +36,7 @@ import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.util.ArrayList;
 
-@TeleOp
+@Autonomous
 public class DetectConeAuto extends LinearOpMode {
     OpenCvCamera camera;
     AprilTagDetectionPipeline aprilTagDetectionPipeline;
@@ -99,18 +100,6 @@ public class DetectConeAuto extends LinearOpMode {
                 .forward(25)
                 .build();
 
-         /*
-        drive.setPoseEstimate(startPose);
-        Trajectory park1 = drive.trajectoryBuilder(startPose)
-                .splineTo(new Vector2d(10, 10), 0)
-                .build();
-        Trajectory park2 = drive.trajectoryBuilder(startPose)
-                .splineTo(new Vector2d(10, 10), 0)
-                .build();
-        Trajectory park3 = drive.trajectoryBuilder(startPose)
-                .splineTo(new Vector2d(10, 10), 0)
-                .build();
-                */
 
         // Initialize camera
         int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
@@ -131,7 +120,7 @@ public class DetectConeAuto extends LinearOpMode {
         });
 
         telemetry.setMsTransmissionInterval(50);
-
+        FtcDashboard.getInstance().startCameraStream(camera, 0);
         /*
          * The INIT-loop:
          * This REPLACES waitForStart!
@@ -222,10 +211,11 @@ public class DetectConeAuto extends LinearOpMode {
             // do something else
         }
 
+        // Transfer the current pose to PoseStorage so we can use it in TeleOp
         PoseStorage.currentPose = drive.getPoseEstimate();
 
         /* You wouldn't have this in your autonomous, this is just to prevent the sample from ending TODO: remove */
-        while (opModeIsActive()) {sleep(20);}
+        //while (opModeIsActive()) {sleep(20);}
     }
 
     void tagToTelemetry(AprilTagDetection detection)

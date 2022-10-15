@@ -18,11 +18,13 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
  * <p>
  * See lines 42-57.
  */
-@TeleOp(group = "advanced")
+@TeleOp()
 public class TeleopFieldCentric extends LinearOpMode {
     DcMotorEx slide;
     double slideTargetPosition;
     double error;
+    CRServo claw;
+    boolean fieldCentricEnable;
 
 
     @Override
@@ -30,6 +32,7 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         //Initialization Period
 
+        // RoadRunner Init
         // Initialize SampleMecanumDrive
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
@@ -41,14 +44,20 @@ public class TeleopFieldCentric extends LinearOpMode {
         // See AutoTransferPose.java for further details
         drive.setPoseEstimate(PoseStorage.currentPose);
 
+        // Motor Init
         // Arm
         slide = hardwareMap.get(DcMotorEx.class, "arm");
         slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         //Claw
-        CRServo claw = hardwareMap.get(CRServo.class, "claw");
+        claw = hardwareMap.get(CRServo.class, "claw");
         claw.setPower(0);
+
+        // Variable Init
+        fieldCentricEnable = true;
+        slideTargetPosition = 0.0;
+
         waitForStart();
 
         if (isStopRequested()) return;
@@ -66,7 +75,10 @@ public class TeleopFieldCentric extends LinearOpMode {
             Vector2d input = new Vector2d(
                     -gamepad1.left_stick_y,
                     -gamepad1.left_stick_x
-            ).rotated(-poseEstimate.getHeading());
+            );
+            if (fieldCentricEnable) {
+                input = input.rotated(-poseEstimate.getHeading());
+            }
 
             // Pass in the rotated input + right stick value for rotation
             // Rotation is not part of the rotated input thus must be passed in separately
@@ -80,12 +92,13 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             claw.setPower(gamepad2.left_stick_x);
 
+
             // Update everything. Odometry. Etc.
             drive.update();
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
             if (gamepad2.y) {
                 slideTargetPosition = 1200;
-                // move arm
+                // TODO: move arm
             }
             if (gamepad2.b) {
                 slideTargetPosition = 600;
@@ -100,13 +113,11 @@ public class TeleopFieldCentric extends LinearOpMode {
             }
 
 
-
+            // obtain the encoder position and calculate the error
             error = slideTargetPosition - slide.getCurrentPosition();
             // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
             if (Math.abs(error) > 10) {
-                // obtain the encoder position
 
-                // calculate the error
 
                 // set motor power proportional to the error
                 if (Math.abs(error) > 50) {
@@ -125,6 +136,8 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("x", poseEstimate.getX());
             telemetry.addData("y", poseEstimate.getY());
             telemetry.addData("heading", poseEstimate.getHeading());
+            telemetry.addData("armPosition", slide.getCurrentPosition());
+            telemetry.addData("armTargetPosition", slideTargetPosition);
             telemetry.update();
         }
     }
