@@ -26,7 +26,7 @@ public class TeleopFieldCentric extends LinearOpMode {
     CRServo claw;
     boolean fieldCentricEnable;
     boolean blue;
-
+    double speed;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -59,6 +59,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         fieldCentricEnable = true;
         slideTargetPosition = 0.0;
         blue = true;
+        speed = .8;
 
         waitForStart();
 
@@ -72,11 +73,20 @@ public class TeleopFieldCentric extends LinearOpMode {
             // Read pose
             Pose2d poseEstimate = drive.getPoseEstimate();
 
+            if (gamepad1.left_bumper){
+                speed = .4;
+            } else if (gamepad2.right_bumper){
+                speed = 1;
+            } else {
+                speed = .8;
+            }
+
+
             // Create a vector from the gamepad x/y inputs
             // Then, rotate that vector by the inverse of that heading
             Vector2d input = new Vector2d(
-                    -gamepad1.left_stick_y,
-                    -gamepad1.left_stick_x
+                    -gamepad1.left_stick_y * speed,
+                    -gamepad1.left_stick_x * speed
             );
             if (fieldCentricEnable) {
                 if (blue) {
@@ -92,11 +102,11 @@ public class TeleopFieldCentric extends LinearOpMode {
                     new Pose2d(
                             input.getX(),
                             input.getY(),
-                            -gamepad1.right_stick_x
+                            (gamepad1.right_trigger - gamepad1.left_trigger)
                     )
             );
 
-            claw.setPower(gamepad2.left_stick_x);
+            claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
 
 
             // Update everything. Odometry. Etc.
