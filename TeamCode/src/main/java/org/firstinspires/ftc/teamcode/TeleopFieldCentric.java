@@ -80,6 +80,9 @@ public class TeleopFieldCentric extends LinearOpMode {
             } else {
                 speed = .8;
             }
+            if (gamepad1.x) {
+                blue = !blue;
+            }
 
 
             // Create a vector from the gamepad x/y inputs
@@ -90,9 +93,9 @@ public class TeleopFieldCentric extends LinearOpMode {
             );
             if (fieldCentricEnable) {
                 if (blue) {
-                    input = input.rotated(-poseEstimate.getHeading() + 90.0);
+                    input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
                 } else {
-                    input = input.rotated(-poseEstimate.getHeading() + 270.0);
+                    input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(270.0));
                 }
             }
 
@@ -102,7 +105,7 @@ public class TeleopFieldCentric extends LinearOpMode {
                     new Pose2d(
                             input.getX(),
                             input.getY(),
-                            (gamepad1.right_trigger - gamepad1.left_trigger)
+                            (gamepad1.left_trigger - gamepad1.right_trigger)
                     )
             );
 
@@ -113,13 +116,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             drive.update();
 
             //FieldcENTRIC
-            if (gamepad1.x) {
-                if (!blue) {
-                    blue = true;
-                } else {
-                    blue = false;
-                }
-            }
+
             // Slide
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
             if (gamepad2.y) {
@@ -165,6 +162,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("armPosition", slide.getCurrentPosition());
             telemetry.addData("armTargetPosition", slideTargetPosition);
             telemetry.addData("toggleFieldCentric", fieldCentricEnable);
+            telemetry.addData("blue", blue);
             telemetry.update();
         }
     }
