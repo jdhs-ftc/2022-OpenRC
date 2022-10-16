@@ -74,11 +74,11 @@ public class TeleopFieldCentric extends LinearOpMode {
             Pose2d poseEstimate = drive.getPoseEstimate();
 
             if (gamepad1.left_bumper){
-                speed = .4;
+                speed = .25;
             } else if (gamepad2.right_bumper){
                 speed = 1;
             } else {
-                speed = .8;
+                speed = .5;
             }
             if (gamepad1.x) {
                 blue = !blue;
