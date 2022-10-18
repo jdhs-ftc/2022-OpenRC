@@ -21,10 +21,10 @@ import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 @TeleOp()
 public class TeleopFieldCentric extends LinearOpMode {
     DcMotorEx slide;
+    DcMotorEx arm;
     double slideTargetPosition;
     double error;
     CRServo claw;
-    boolean fieldCentricEnable;
     boolean blue;
     double speed;
 
@@ -47,16 +47,20 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         // Motor Init
         // Arm
-        slide = hardwareMap.get(DcMotorEx.class, "arm");
+        slide = hardwareMap.get(DcMotorEx.class, "slide");
         slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        arm = hardwareMap.get(DcMotorEx.class, "arm");
+        arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        arm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
 
         //Claw
         claw = hardwareMap.get(CRServo.class, "claw");
         claw.setPower(0);
 
+
         // Variable Init
-        fieldCentricEnable = true;
         slideTargetPosition = 0.0;
         blue = true;
         speed = .8;
@@ -91,13 +95,12 @@ public class TeleopFieldCentric extends LinearOpMode {
                     -gamepad1.left_stick_y * speed,
                     -gamepad1.left_stick_x * speed
             );
-            if (fieldCentricEnable) {
-                if (blue) {
-                    input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
-                } else {
-                    input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(270.0));
-                }
+            if (blue) {
+                input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
+            } else {
+                input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(270.0));
             }
+
 
             // Pass in the rotated input + right stick value for rotation
             // Rotation is not part of the rotated input thus must be passed in separately
@@ -138,21 +141,14 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // obtain the encoder position and calculate the error
             error = slideTargetPosition - slide.getCurrentPosition();
-            // from https://www.ctrlaltftc.com/introduction-to-closed-loop-control TODO: add to notebook
-            if (Math.abs(error) > 10) {
-
-
-                // set motor power proportional to the error
-                if (Math.abs(error) > 50) {
-                    if (error > 0) {
-                        slide.setPower(0.5);
-                    } else {
-                        slide.setPower(-0.5);
-                    }
-                } else {
-                    slide.setPower(error / 100);
-                }
+            slide.setTargetPosition((int) slideTargetPosition);
+            slide.setTargetPositionTolerance(10);
+            if (error > 0) {
+                slide.setPower(0.8);
+            } else {
+                slide.setPower(-0.8);
             }
+            slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
 
 
             // Print pose to telemetry
@@ -161,7 +157,6 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("heading", poseEstimate.getHeading());
             telemetry.addData("armPosition", slide.getCurrentPosition());
             telemetry.addData("armTargetPosition", slideTargetPosition);
-            telemetry.addData("toggleFieldCentric", fieldCentricEnable);
             telemetry.addData("blue", blue);
             telemetry.update();
         }

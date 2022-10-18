@@ -55,9 +55,9 @@ public class DetectConeAuto extends LinearOpMode {
     // UNITS ARE METERS
     double tagsize = 0.166;
 
-    int ID_TAG_OF_INTEREST = 18; // Tag ID 18 from the 36h11 family
 
     AprilTagDetection tagOfInterest = null;
+    Pose2d startPose;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -74,31 +74,19 @@ public class DetectConeAuto extends LinearOpMode {
         // Blue Team
         // Red Corner
         */
-        Pose2d startPose = new Pose2d(36,61.5,Math.toRadians(-90));
-        /*
+        Pose2d blueTeamRedCornerPose = new Pose2d(36,61.5,Math.toRadians(-90));
+
         // Blue Corner
-        Pose2d startPose = new Pose2d(36,61.5,Math.toRadians(-90));
+        Pose2d blueTeamBlueCornerPose = new Pose2d(36,61.5,Math.toRadians(-90));
         // Red Team
         // Red Corner
-        Pose2d startPose = new Pose2d(-36,-61.5,Math.toRadians(90));
+        Pose2d redTeamRedCornerPose = new Pose2d(-36,-61.5,Math.toRadians(90));
         // Blue Corner
-        Pose2d startPose = new Pose2d(36,-61.5,Math.toRadians(90));
+        Pose2d redTeamBlueCornerPose = new Pose2d(36,-61.5,Math.toRadians(90));
         // Both
-        */
-        drive.setPoseEstimate(startPose);
-        TrajectorySequence park1 = drive.trajectorySequenceBuilder(startPose)
-                .strafeLeft(24)
-                .forward(25)
-                .build();
-         TrajectorySequence park2 = drive.trajectorySequenceBuilder(startPose)
-                .strafeLeft(24)
-                .forward(50)
-                .strafeRight(24)
-                .build();
-         TrajectorySequence park3 = drive.trajectorySequenceBuilder(startPose)
-                .strafeRight(22)
-                .forward(25)
-                .build();
+        String selection = "Blue Team Red Corner";
+        startPose = blueTeamRedCornerPose;
+
 
 
         // Initialize camera
@@ -165,6 +153,20 @@ public class DetectConeAuto extends LinearOpMode {
 
             }
 
+            if (gamepad1.a) {
+                startPose = blueTeamRedCornerPose;
+                selection = "Blue Team Red Corner";
+            } else if (gamepad1.b) {
+                startPose = blueTeamBlueCornerPose;
+                selection = "Blue Team Blue Corner";
+            } else if (gamepad1.x) {
+                startPose = redTeamRedCornerPose;
+                selection = "Red Team Red Corner";
+            } else if (gamepad1.y) {
+                startPose = redTeamBlueCornerPose;
+                selection = "Red Team Blue Corner";
+            }
+            telemetry.addLine(selection);
             telemetry.update();
             sleep(20);
         }
@@ -183,6 +185,20 @@ public class DetectConeAuto extends LinearOpMode {
             telemetry.addLine("No tag snapshot available, it was never sighted during the init loop :(");
             telemetry.update();
         }
+        drive.setPoseEstimate(startPose);
+        TrajectorySequence park1 = drive.trajectorySequenceBuilder(startPose)
+                .strafeLeft(24)
+                .forward(25)
+                .build();
+        TrajectorySequence park2 = drive.trajectorySequenceBuilder(startPose)
+                .strafeLeft(24)
+                .forward(50)
+                .strafeRight(24)
+                .build();
+        TrajectorySequence park3 = drive.trajectorySequenceBuilder(startPose)
+                .strafeRight(22)
+                .forward(25)
+                .build();
 
         /* Actually do something useful */
         if (tagOfInterest == null) {
@@ -190,6 +206,8 @@ public class DetectConeAuto extends LinearOpMode {
              * Insert your autonomous code here, presumably running some default configuration
              * since the tag was never sighted during INIT
              */
+            // Pick a random one and pray
+            drive.followTrajectorySequence(park1);
         } else {
             /*
              * Insert your autonomous code here, probably using the tag pose to decide your configuration.
