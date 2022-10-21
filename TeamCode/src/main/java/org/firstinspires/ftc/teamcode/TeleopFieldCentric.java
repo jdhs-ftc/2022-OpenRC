@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 /**
@@ -23,10 +24,13 @@ public class TeleopFieldCentric extends LinearOpMode {
     DcMotorEx slide;
     DcMotorEx arm;
     double slideTargetPosition;
-    double error;
+    double slideError;
     CRServo claw;
     boolean blue;
     double speed;
+    double armTargetPosition;
+    double armError;
+    double slidePeakCurrentAmps;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -41,6 +45,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         // Velocity control per wheel is not necessary outside of motion profiled auto
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
+
         // Retrieve our pose from the PoseStorage.currentPose static field
         // See AutoTransferPose.java for further details
         drive.setPoseEstimate(PoseStorage.currentPose);
@@ -49,6 +54,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         // Arm
         slide = hardwareMap.get(DcMotorEx.class, "slide");
         slide.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        slide.setCurrentAlert(8, CurrentUnit.AMPS);
         slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         arm = hardwareMap.get(DcMotorEx.class, "arm");
         arm.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -62,8 +68,10 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         // Variable Init
         slideTargetPosition = 0.0;
+        armTargetPosition = 0.0;
         blue = true;
         speed = .8;
+        slidePeakCurrentAmps = 0.0;
 
         waitForStart();
 
@@ -87,6 +95,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             if (gamepad1.x) {
                 blue = !blue;
             }
+
 
 
             // Create a vector from the gamepad x/y inputs
@@ -122,8 +131,10 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // Slide
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
+            armTargetPosition = armTargetPosition + (-gamepad2.right_stick_x);
             if (gamepad2.y) {
                 slideTargetPosition = 1200;
+                armTargetPosition = 120;
                 // TODO: move arm
             }
             if (gamepad2.b) {
@@ -131,6 +142,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             }
             if (gamepad2.a) {
                 slideTargetPosition = 20;
+                armTargetPosition = 0;
             }
             if (slideTargetPosition > 1200) {
                 slideTargetPosition = 1200;
@@ -138,26 +150,61 @@ public class TeleopFieldCentric extends LinearOpMode {
                 slideTargetPosition = 0;
             }
 
+            if (armTargetPosition < -120) {
+                armTargetPosition = -120;
+            } else if (armTargetPosition > 0) {
+                armTargetPosition = 0;
+            }
+
+
 
             // obtain the encoder position and calculate the error
-            error = slideTargetPosition - slide.getCurrentPosition();
+            slideError = slideTargetPosition - slide.getCurrentPosition();
             slide.setTargetPosition((int) slideTargetPosition);
             slide.setTargetPositionTolerance(10);
-            if (error > 0) {
+            if (slideError > 0) {
                 slide.setPower(0.8);
             } else {
                 slide.setPower(-0.8);
             }
-            slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            if (!slide.isOverCurrent()) {
+                slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            } else {
+                slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                slide.setPower(0);
+            }
+
+
+            // arm
+
+            armError = armTargetPosition - arm.getCurrentPosition();
+
+            arm.setTargetPosition((int) armTargetPosition);
+            arm.setTargetPositionTolerance(0);
+            if (armError > 0) {
+                arm.setPower(0.8);
+            } else {
+                arm.setPower(-0.8);
+            }
+            arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+
+            // update peak current if larger then previous
+            if (slide.getCurrent(CurrentUnit.AMPS) > slidePeakCurrentAmps) {
+                slidePeakCurrentAmps = slide.getCurrent(CurrentUnit.AMPS);
+            }
+
+
 
 
             // Print pose to telemetry
             telemetry.addData("x", poseEstimate.getX());
             telemetry.addData("y", poseEstimate.getY());
             telemetry.addData("heading", poseEstimate.getHeading());
-            telemetry.addData("armPosition", slide.getCurrentPosition());
-            telemetry.addData("armTargetPosition", slideTargetPosition);
+            telemetry.addData("armPosition", arm.getCurrentPosition());
+            telemetry.addData("armTargetPosition", armTargetPosition);
             telemetry.addData("blue", blue);
+            telemetry.addData("slideCurrent", slide.getCurrent(CurrentUnit.AMPS));
+            telemetry.addData("slidePeakCurrent", slidePeakCurrentAmps);
             telemetry.update();
         }
     }
