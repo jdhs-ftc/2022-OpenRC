@@ -61,6 +61,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         arm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 
+
         //Claw
         claw = hardwareMap.get(CRServo.class, "claw");
         claw.setPower(0);
@@ -122,6 +123,13 @@ public class TeleopFieldCentric extends LinearOpMode {
             );
 
             claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
+            arm.setPower(gamepad2.right_stick_x * 0.1);
+
+                if (arm.getCurrentPosition() > 0) {
+                    arm.setPower(-0.25);
+                } else if (arm.getCurrentPosition() < -120) {
+                    arm.setPower(0.25);
+                }
 
 
             // Update everything. Odometry. Etc.
@@ -134,7 +142,6 @@ public class TeleopFieldCentric extends LinearOpMode {
             armTargetPosition = armTargetPosition + (-gamepad2.right_stick_x);
             if (gamepad2.y) {
                 slideTargetPosition = 1200;
-                armTargetPosition = 120;
                 // TODO: move arm
             }
             if (gamepad2.b) {
@@ -142,10 +149,9 @@ public class TeleopFieldCentric extends LinearOpMode {
             }
             if (gamepad2.a) {
                 slideTargetPosition = 20;
-                armTargetPosition = 0;
             }
-            if (slideTargetPosition > 1200) {
-                slideTargetPosition = 1200;
+            if (slideTargetPosition > 1150) {
+                slideTargetPosition = 1150;
             } else if (slideTargetPosition < 0) {
                 slideTargetPosition = 0;
             }
@@ -176,17 +182,21 @@ public class TeleopFieldCentric extends LinearOpMode {
 
 
             // arm
-
+            /*
             armError = armTargetPosition - arm.getCurrentPosition();
 
             arm.setTargetPosition((int) armTargetPosition);
-            arm.setTargetPositionTolerance(0);
+            arm.setTargetPositionTolerance(5);
+            
             if (armError > 0) {
-                arm.setPower(0.8);
+                arm.setPower(0.5);
             } else {
-                arm.setPower(-0.8);
+                arm.setPower(-0.5);
             }
-            arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            if (!arm.isBusy() && armError > 10) {
+                arm.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            }
+            */
 
             // update peak current if larger then previous
             if (slide.getCurrent(CurrentUnit.AMPS) > slidePeakCurrentAmps) {
@@ -203,7 +213,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("armPosition", arm.getCurrentPosition());
             telemetry.addData("armTargetPosition", armTargetPosition);
             telemetry.addData("blue", blue);
-            telemetry.addData("slideCurrent", slide.getCurrent(CurrentUnit.AMPS));
+            telemetry.addData("armCurrent", arm.getCurrent(CurrentUnit.AMPS));
             telemetry.addData("slidePeakCurrent", slidePeakCurrentAmps);
             telemetry.update();
         }
