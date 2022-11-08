@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.acmerobotics.roadrunner.control.PIDFController;
 import com.acmerobotics.roadrunner.geometry.Pose2d;
 import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -9,6 +10,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.drive.DriveConstants;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 
 /**
@@ -31,6 +33,9 @@ public class TeleopFieldCentric extends LinearOpMode {
     double armTargetPosition;
     double armError;
     double slidePeakCurrentAmps;
+    // Declare a PIDF Controller to regulate heading
+    // Use the same gains as SampleMecanumDrive's heading controller
+    private final PIDFController headingController = new PIDFController(SampleMecanumDrive.HEADING_PID);
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -41,6 +46,8 @@ public class TeleopFieldCentric extends LinearOpMode {
         // Initialize SampleMecanumDrive
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
+
+
         // We want to turn off velocity control for teleop
         // Velocity control per wheel is not necessary outside of motion profiled auto
         drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -49,6 +56,10 @@ public class TeleopFieldCentric extends LinearOpMode {
         // Retrieve our pose from the PoseStorage.currentPose static field
         // See AutoTransferPose.java for further details
         drive.setPoseEstimate(PoseStorage.currentPose);
+
+        // Set input bounds for the heading controller
+        // Automatically handles overflow
+        headingController.setInputBounds(-Math.PI, Math.PI);
 
         // Motor Init
         // Arm
@@ -84,12 +95,12 @@ public class TeleopFieldCentric extends LinearOpMode {
 
         while (opModeIsActive() && !isStopRequested()) {
             // Read pose
-            Pose2d poseEstimate = drive.getPoseEstimate();
+
 
             if (gamepad1.left_bumper){
                 speed = .25;
-            } else if (gamepad2.right_bumper){
-                speed = 1;
+            } else if (gamepad2.right_bumper) {
+                speed = 2;
             } else {
                 speed = .5;
             }
@@ -98,13 +109,13 @@ public class TeleopFieldCentric extends LinearOpMode {
             }
 
 
-
             // Create a vector from the gamepad x/y inputs
             // Then, rotate that vector by the inverse of that heading
             Vector2d input = new Vector2d(
                     -gamepad1.left_stick_y * speed,
                     -gamepad1.left_stick_x * speed
             );
+            Pose2d poseEstimate = drive.getPoseEstimate();
             if (blue) {
                 input = input.rotated(-poseEstimate.getHeading() + Math.toRadians(90.0));
             } else {
@@ -114,21 +125,45 @@ public class TeleopFieldCentric extends LinearOpMode {
 
             // Pass in the rotated input + right stick value for rotation
             // Rotation is not part of the rotated input thus must be passed in separately
+            if (!gamepad1.right_stick_button) {
+
             drive.setWeightedDrivePower(
                     new Pose2d(
                             input.getX(),
                             input.getY(),
                             (gamepad1.left_trigger - gamepad1.right_trigger)
                     )
-            );
+            ); } else {
+                // Set the target heading for the heading controller to our desired angle
+                if (blue) {
+                    headingController.setTargetPosition(Math.toRadians(90.0));
+                } else {
+                    headingController.setTargetPosition(Math.toRadians(270.0));
+                }
+
+
+                // Set desired angular velocity to the heading controller output + angular
+                // velocity feedforward
+                double headingInput = (headingController.update(poseEstimate.getHeading())
+                        * DriveConstants.kV)
+                        * DriveConstants.TRACK_WIDTH;
+                drive.setWeightedDrivePower(
+                        new Pose2d(
+                                input.getX(),
+                                input.getY(),
+                                headingInput
+                        ));
+
+            }
 
             claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
-            arm.setPower(gamepad2.right_stick_x * 0.1);
+            arm.setPower(gamepad2.right_stick_x * 0.5);
+
 
                 if (arm.getCurrentPosition() > 0) {
-                    arm.setPower(-0.25);
-                } else if (arm.getCurrentPosition() < -120) {
-                    arm.setPower(0.25);
+                    arm.setPower(-0.5);
+                } else if (arm.getCurrentPosition() < -90) {
+                    arm.setPower(0.5);
                 }
 
 
@@ -136,6 +171,9 @@ public class TeleopFieldCentric extends LinearOpMode {
             drive.update();
 
             //FieldcENTRIC
+            if (gamepad1.dpad_down && gamepad1.dpad_left && gamepad1.dpad_up && gamepad1.dpad_right) {
+                drive.setPoseEstimate(new Pose2d(0, 0, Math.toRadians(90.0)));
+            }
 
             // Slide
             slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
