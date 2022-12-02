@@ -233,7 +233,7 @@ public class TFODEverydayObjects extends LinearOpMode {
     private String[] getStringArray(ArrayList<String> arr)
     {
         // declaration and initialize String Array
-        String str[] = new String[arr.size()];
+        String[] str = new String[arr.size()];
 
         // Convert ArrayList to object array
         Object[] objArr = arr.toArray();
