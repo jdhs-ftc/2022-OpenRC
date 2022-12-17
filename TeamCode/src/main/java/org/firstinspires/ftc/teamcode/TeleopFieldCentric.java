@@ -10,6 +10,7 @@ import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -24,6 +25,7 @@ import org.firstinspires.ftc.teamcode.vision.RedConeDetectionPipeline;
 import org.opencv.core.Rect;
 import org.openftc.easyopencv.OpenCvCamera;
 import org.openftc.easyopencv.OpenCvCameraFactory;
+import org.openftc.easyopencv.OpenCvCameraRotation;
 
 import java.util.List;
 
@@ -44,6 +46,7 @@ public class TeleopFieldCentric extends LinearOpMode {
     private final PIDFController headingController = new PIDFController(SampleMecanumDrive.HEADING_PID);
     DcMotorEx slide;
     DcMotorEx arm;
+    ColorSensor color;
     DigitalChannel magnet;
     double slideTargetPosition;
     double slideError;
@@ -104,6 +107,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         arm.setCurrentAlert(4, CurrentUnit.AMPS);
         magnet = hardwareMap.get(DigitalChannel.class, "magnet");
         magnet.setMode(DigitalChannel.Mode.INPUT);
+        color = hardwareMap.get(ColorSensor.class, "color");
 
 
         // Initiate Claw
@@ -121,7 +125,7 @@ public class TeleopFieldCentric extends LinearOpMode {
         camera.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener() {
             @Override
             public void onOpened() {
-                //camera.startStreaming(800, 448, OpenCvCameraRotation.UPRIGHT);
+                camera.startStreaming(800, 448, OpenCvCameraRotation.UPRIGHT);
             }
 
             @Override
@@ -199,8 +203,26 @@ public class TeleopFieldCentric extends LinearOpMode {
                         ));
 
             }
+            if (gamepad1.right_stick_button) {
+                headingController.setTargetPosition(drive.getExternalHeading() + poleDetectionPipeline.getMaxRect().x);
 
-            claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
+                // Set desired angular velocity to the heading controller output + angular
+                // velocity feedforward
+                double headingInput = (headingController.update(poseEstimate.getHeading())
+                        * DriveConstants.kV)
+                        * DriveConstants.TRACK_WIDTH;
+                drive.setWeightedDrivePower(
+                        new Pose2d(
+                                input.getX(),
+                                input.getY(),
+                                headingInput
+                        ));
+            }
+            if (armMode != Mode.MOVING_DOWN && color.red() < 2500 && color.blue() < 2500) {
+                claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
+            } else {
+                claw.setPower(0.25 + gamepad2.left_trigger - gamepad2.right_trigger);
+            }
             //arm.setPower(gamepad2.right_stick_x * 0.5);
 
 
@@ -213,21 +235,30 @@ public class TeleopFieldCentric extends LinearOpMode {
             }
 
             // Slide
-            slideTargetPosition = slideTargetPosition + (-gamepad2.right_stick_y * 10);
+            slideTargetPosition = slideTargetPosition + (-gamepad2.left_stick_y * 10);
             if (gamepad2.y) {
                 slideTargetPosition = 1200;
                 armMode = Mode.MOVING_UP;
             }
             if (gamepad2.b) {
-                slideTargetPosition = 600;
-                armMode = Mode.MOVING_DOWN;
+                slideTargetPosition = 400;
+                armMode = Mode.MOVING_UP;
             }
             if (gamepad2.a) {
                 slideTargetPosition = 20;
                 armMode = Mode.MOVING_DOWN;
             }
-            if (slideTargetPosition > 1190) {
-                slideTargetPosition = 1190;
+            if (gamepad2.x) {
+                slideTargetPosition = 1200;
+                armMode = Mode.MOVING_DOWN;
+            }
+            if (gamepad2.dpad_right && gamepad2.dpad_left) {
+                armMode = Mode.DOWN;
+                arm.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                arm.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            }
+            if (slideTargetPosition > 1100) {
+                slideTargetPosition = 1100;
             } else if (slideTargetPosition < 0) {
                 slideTargetPosition = 0;
             }
@@ -244,7 +275,7 @@ public class TeleopFieldCentric extends LinearOpMode {
             } else {
                 slide.setPower(-0.8);
             }
-            if (!slide.isOverCurrent() && !(gamepad2.right_stick_y > 0)) {
+            if (!slide.isOverCurrent() && !(gamepad2.left_stick_y > 0)) {
                 slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             } else {
                 slide.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -270,31 +301,50 @@ public class TeleopFieldCentric extends LinearOpMode {
              */
 
 
+
+
             switch (armMode) {
                 case UP:
-                    arm.setPower(gamepad2.left_stick_y * 0.5);
+                    arm.setPower(-gamepad2.right_stick_y * 0.5);
                     break;
                 case DOWN:
-                    arm.setPower(gamepad2.left_stick_y * 0.5);
+                    arm.setPower(-gamepad2.right_stick_y * 0.5);
                     break;
                 case MOVING_UP:
-                    if (arm.getCurrentPosition() >= 360 || gamepad2.x) {
+                    if (arm.getCurrentPosition() >= 350 || gamepad2.x) {
                         armMode = Mode.UP;
                         arm.setPower(0);
                     } else {
-                        arm.setPower(0.75);
+                        if (slide.getCurrentPosition() > 100 && !arm.isOverCurrent()) {
+
+                            arm.setPower(0.75);
+                            // compensate for arm gravity using the arm angle, weight, and length
+                            //arm.setPower((0.75 * Math.cos(Math.toRadians(arm.getCurrentPosition() / 2.0))) + 0.75);
+                        } else {
+                            arm.setPower(0);
+                        }
                     }
                     break;
                 case MOVING_DOWN:
-                    if (arm.getCurrentPosition() <= 5 || gamepad2.x) {
+                    if (arm.getCurrentPosition() <= 5) {
                         armMode = Mode.DOWN;
                         arm.setPower(0);
                     } else {
                         arm.setPower(-0.25);
                     }
+                    if ((gamepad2.left_trigger == 0) && (gamepad2.right_trigger == 0)) {
+                        claw.setPower(0.1);
+                    } else {
+                        claw.setPower(gamepad2.left_trigger - gamepad2.right_trigger);
+                    }
 
                     break;
             }
+            // if right bumper on gamepad2 pressed, reset the slide encoder
+
+            // color
+
+
 
 
             // Vision
@@ -307,11 +357,16 @@ public class TeleopFieldCentric extends LinearOpMode {
             telemetry.addData("armTargetPosition", armTargetPosition);
             telemetry.addData("armCurrent", arm.getCurrent(CurrentUnit.AMPS));
             telemetry.addData("slidePeakCurrent", slidePeakCurrentAmps);
+            telemetry.addData("slideTargetPosition", slideTargetPosition);
+            telemetry.addData("slidePosition", slide.getCurrentPosition());
             telemetry.addData("controllerHeading", controllerHeading.angle());
             telemetry.addData("Magnet", magnet.getState());
             telemetry.addData("Armstate", armMode);
             telemetry.addData("hubNames", hubNames);
             telemetry.addData("maxRect", maxRect);
+            telemetry.addData("colorBlue", color.blue());
+            telemetry.addData("colorRed", color.red());
+            telemetry.addData("servoPower", claw.getPower());
             telemetry.update();
         }
     }
